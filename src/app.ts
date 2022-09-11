@@ -1,3 +1,31 @@
+// validation
+interface Validatable {
+  value: string | number;
+  required?: boolean; //?はnullを許容する boolean | undefinedと同様
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+}
+function validate(validatableInput: Validatable) {
+  let isValid = true;
+  if (validatableInput.required) {
+    isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+  }
+  if (validatableInput.minLength != null && typeof validatableInput.value === 'string') {
+    isValid = isValid && validatableInput.value.length >= validatableInput.minLength;
+  }
+  if (validatableInput.maxLength != null && typeof validatableInput.value === 'string') {
+    isValid = isValid && validatableInput.value.length <= validatableInput.maxLength;
+  }
+  if (validatableInput.min != null && typeof validatableInput.value === 'number') {
+    isValid = isValid && validatableInput.value >= validatableInput.min;
+  }
+  if (validatableInput.max != null && typeof validatableInput.value === 'number') {
+    isValid = isValid && validatableInput.value <= validatableInput.max;
+  }
+  return isValid;
+}
 // autobind decorator
 function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -38,10 +66,27 @@ class ProjectInput {
     const enterdTitle = this.titleInputElement.value;
     const enterdDescription = this.descriptionInputElement.value;
     const enterdManday = this.mandayInputElement.value;
+
+    const titleValidatable: Validatable = {
+      value: enterdTitle,
+      required: true,
+    };
+    const descriptionValidatable: Validatable = {
+      value: enterdDescription,
+      required: true,
+      minLength: 5,
+    };
+    const mandayValidatable: Validatable = {
+      value: +enterdManday,
+      required: true,
+      min: 1,
+      max: 1000,
+    };
+
     if (
-      enterdTitle.trim().length === 0 ||
-      enterdDescription.trim().length === 0 ||
-      enterdManday.trim().length === 0
+      !validate(titleValidatable) ||
+      !validate(descriptionValidatable) ||
+      !validate(mandayValidatable)
     ) {
       alert('入力値が正しくありません。');
     } else {
