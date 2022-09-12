@@ -170,7 +170,7 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements 
   }
 
   configure() {
-    this.element.addEventListener('dragstart', this.dragEndHandler);
+    this.element.addEventListener('dragstart', this.dragStartHandler);
     this.element.addEventListener('dragend', this.dragEndHandler);
   }
   renderContent() {
@@ -181,7 +181,7 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements 
 }
 
 // ProjectList Class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DragTarget {
   assignedProjects: Project[];
 
   // super()の呼び出しが完了するまではthisは使えないため、type となる
@@ -191,6 +191,20 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     this.configure();
     this.renderContent();
   }
+  @autobind
+  dragOverHander(_: DragEvent) {
+    const listEl = this.element.querySelector('ul')!;
+    listEl.classList.add('droppable');
+  }
+
+  dropHander(_: DragEvent) {}
+
+  @autobind
+  dragLeaveHander(_: DragEvent) {
+    const listEl = this.element.querySelector('ul')!;
+    listEl.classList.remove('droppable');
+  }
+
   // publicメソッドの定義が上
   renderContent() {
     const listId = `${this.type}-projects-list`;
@@ -200,6 +214,9 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
   }
 
   configure() {
+    this.element.addEventListener('dragover', this.dragOverHander);
+    this.element.addEventListener('drop', this.dropHander);
+    this.element.addEventListener('dragleave', this.dragLeaveHander);
     projectState.addListener((projects: Project[]) => {
       const relevantProjects = projects.filter((prj) => {
         if (this.type === 'active') {
