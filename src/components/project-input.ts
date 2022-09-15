@@ -1,74 +1,74 @@
-/// <reference path="base-component.ts"/>
-/// <reference path="../decorators/autobind.ts"/>
-/// <reference path="../state/project-state.ts"/>
-/// <reference path="../models/project.ts"/>
-/// <reference path="../models/drag-drop.ts"/>
+import { Component } from './base-component';
+import { Validatable, validate } from '../util/validation';
+import { autobind } from '../decorators/autobind';
+import { projectState } from '../state/project-state';
 
-namespace App {
-  // ProjectList Class
-  export class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DragTarget {
-    assignedProjects: Project[];
+// ProjectInput Class
+export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  mandayInputElement: HTMLInputElement;
 
-    // super()の呼び出しが完了するまではthisは使えないため、type となる
-    constructor(private type: 'active' | 'finished') {
-      super('project-list', 'app', false, `${type}-projects`);
-      this.assignedProjects = [];
-      this.configure();
-      this.renderContent();
-    }
-    @autobind
-    dragOverHander(event: DragEvent) {
-      if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
-        event.preventDefault();
-        const listEl = this.element.querySelector('ul')!;
-        listEl.classList.add('droppable');
-      }
-    }
+  constructor() {
+    super('project-input', 'app', true, 'user-input');
 
-    @autobind
-    dropHander(event: DragEvent) {
-      const prjId = event.dataTransfer!.getData('text/plain');
-      projectState.moveProject(
-        prjId,
-        this.type === 'active' ? ProjectStatus.Active : ProjectStatus.Finished
-      );
-    }
+    this.titleInputElement = this.element.querySelector('#title') as HTMLInputElement;
+    this.descriptionInputElement = this.element.querySelector('#description') as HTMLInputElement;
+    this.mandayInputElement = this.element.querySelector('#manday') as HTMLInputElement;
 
-    @autobind
-    dragLeaveHander(_: DragEvent) {
-      const listEl = this.element.querySelector('ul')!;
-      listEl.classList.remove('droppable');
-    }
+    this.configure();
+  }
+  configure() {
+    this.element.addEventListener('submit', this.submitHandler);
+  }
+  //抽象クラスの制約を満たすために定義
+  renderContent() {}
+  private gatherUserInput(): [string, string, number] | void {
+    const enterdTitle = this.titleInputElement.value;
+    const enterdDescription = this.descriptionInputElement.value;
+    const enterdManday = this.mandayInputElement.value;
 
-    // publicメソッドの定義が上
-    renderContent() {
-      const listId = `${this.type}-projects-list`;
-      this.element.querySelector('ul')!.id = listId;
-      this.element.querySelector('h2')!.textContent =
-        this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
-    }
+    const titleValidatable: Validatable = {
+      value: enterdTitle,
+      required: true,
+    };
+    const descriptionValidatable: Validatable = {
+      value: enterdDescription,
+      required: true,
+      minLength: 5,
+    };
+    const mandayValidatable: Validatable = {
+      value: +enterdManday,
+      required: true,
+      min: 1,
+      max: 1000,
+    };
 
-    configure() {
-      this.element.addEventListener('dragover', this.dragOverHander);
-      this.element.addEventListener('drop', this.dropHander);
-      this.element.addEventListener('dragleave', this.dragLeaveHander);
-      projectState.addListener((projects: Project[]) => {
-        const relevantProjects = projects.filter((prj) => {
-          if (this.type === 'active') {
-            return prj.status === ProjectStatus.Active;
-          }
-          return prj.status === ProjectStatus.Finished;
-        });
-        this.assignedProjects = relevantProjects;
-        this.renderProject();
-      });
+    if (
+      !validate(titleValidatable) ||
+      !validate(descriptionValidatable) ||
+      !validate(mandayValidatable)
+    ) {
+      alert('入力値が正しくありません。');
+    } else {
+      return [enterdTitle, enterdDescription, +enterdManday];
     }
-    private renderProject() {
-      const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
-      listEl.innerHTML = '';
-      for (const prjItem of this.assignedProjects) {
-        new ProjectItem(listEl.id, prjItem);
-      }
+  }
+
+  private clearInput() {
+    this.titleInputElement.value = '';
+    this.descriptionInputElement.value = '';
+    this.mandayInputElement.value = '';
+  }
+
+  @autobind
+  private submitHandler(event: Event) {
+    event.preventDefault();
+    const userInput = this.gatherUserInput();
+    if (Array.isArray(userInput)) {
+      const [title, desc, manday] = userInput;
+      projectState.addProject(title, desc, manday);
+      this.clearInput();
     }
   }
 }
