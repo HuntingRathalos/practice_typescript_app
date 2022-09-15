@@ -1,5 +1,8 @@
+// Default exportとは別にexportできる
+export const something = '...';
+
 // Component Class
-export abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+export default abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElemtnt: HTMLTemplateElement;
   hostElement: T;
   element: U;
